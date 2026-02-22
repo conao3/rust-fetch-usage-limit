@@ -168,9 +168,30 @@ async fn run_claude() -> ExitCode {
 }
 
 fn read_codex_auth() -> Result<(String, String), String> {
-    let auth_path = env::var("CODEX_AUTH_FILE")
-        .map(PathBuf::from)
-        .unwrap_or_else(|_| PathBuf::from(env::var("HOME").unwrap_or_else(|_| "/tmp".to_string())).join(".codex/auth.json"));
+    if let Ok(access_token) = env::var("OPENAI_OAUTH_API_KEY") {
+        let access_token = access_token.trim().to_string();
+        if !access_token.is_empty() {
+            let account_id = env::var("OPENAI_ACCOUNT_ID")
+                .or_else(|_| env::var("CHATGPT_ACCOUNT_ID"))
+                .map_err(|_| {
+                    "OPENAI_OAUTH_API_KEY is set, but OPENAI_ACCOUNT_ID or CHATGPT_ACCOUNT_ID is missing"
+                        .to_string()
+                })?;
+            let account_id = account_id.trim().to_string();
+            if account_id.is_empty() {
+                return Err(
+                    "OPENAI_OAUTH_API_KEY is set, but OPENAI_ACCOUNT_ID/CHATGPT_ACCOUNT_ID is empty"
+                        .to_string(),
+                );
+            }
+            return Ok((access_token, account_id));
+        }
+    }
+
+    let auth_path = env::var("CODEX_AUTH_FILE").map(PathBuf::from).unwrap_or_else(|_| {
+        PathBuf::from(env::var("HOME").unwrap_or_else(|_| "/tmp".to_string()))
+            .join(".codex/auth.json")
+    });
 
     let content = fs::read_to_string(&auth_path)
         .map_err(|e| format!("failed to read auth file {}: {e}", auth_path.display()))?;
