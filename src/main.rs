@@ -47,6 +47,18 @@ struct CodexTokens {
     account_id: Option<String>,
 }
 
+#[derive(Debug, Deserialize)]
+struct ClaudeCredentialsFile {
+    #[serde(rename = "claudeAiOauth")]
+    claude_ai_oauth: Option<ClaudeAiOauth>,
+}
+
+#[derive(Debug, Deserialize)]
+struct ClaudeAiOauth {
+    #[serde(rename = "accessToken")]
+    access_token: Option<String>,
+}
+
 fn left(v: Option<f64>) -> Option<f64> {
     v.map(|n| (100.0 - n).max(0.0))
 }
@@ -58,14 +70,45 @@ fn print_json(value: &Value) {
     }
 }
 
+fn read_claude_oauth_token() -> Result<String, String> {
+    if let Ok(v) = env::var("ANTHROPIC_OAUTH_API_KEY") {
+        let token = v.trim().to_string();
+        if !token.is_empty() {
+            return Ok(token);
+        }
+    }
+
+    let credentials_path = env::var("CLAUDE_CREDENTIALS_FILE")
+        .map(PathBuf::from)
+        .unwrap_or_else(|_| {
+            PathBuf::from(env::var("HOME").unwrap_or_else(|_| "/tmp".to_string()))
+                .join(".claude/.credentials.json")
+        });
+
+    let content = fs::read_to_string(&credentials_path)
+        .map_err(|e| format!("failed to read {}: {e}", credentials_path.display()))?;
+    let credentials: ClaudeCredentialsFile = serde_json::from_str(&content)
+        .map_err(|e| format!("failed to parse {}: {e}", credentials_path.display()))?;
+
+    credentials
+        .claude_ai_oauth
+        .and_then(|o| o.access_token)
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty())
+        .ok_or_else(|| {
+            "ANTHROPIC_OAUTH_API_KEY is not set and accessToken was not found in ~/.claude/.credentials.json"
+                .to_string()
+        })
+}
+
 async fn run_claude() -> ExitCode {
     let base_url =
         env::var("ANTHROPIC_BASE_URL").unwrap_or_else(|_| "https://api.anthropic.com".to_string());
 
-    let api_key = match env::var("ANTHROPIC_OAUTH_API_KEY") {
-        Ok(v) if !v.trim().is_empty() => v,
-        _ => {
-            print_json(&json!({"ok": false, "error": "ANTHROPIC_OAUTH_API_KEY is not set"}));
+    let api_key = match read_claude_oauth_token() {
+        Ok(v) => v,
+        Err(e) => {
+            print_json(&json!({"ok": false, "error": e}));
             return ExitCode::from(2);
         }
     };

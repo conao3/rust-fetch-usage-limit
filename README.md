@@ -5,7 +5,7 @@ A CLI tool that fetches Claude and Codex usage limits and prints JSON output.
 ## Requirements
 
 - Nix available in your environment
-- `ANTHROPIC_OAUTH_API_KEY` set
+- Claude login credentials available at `~/.claude/.credentials.json` or `ANTHROPIC_OAUTH_API_KEY` set
 - Optional `ANTHROPIC_BASE_URL` override when needed
 
 ## Verify in devShell
@@ -22,6 +22,9 @@ nix develop -c cargo check
 nix build .#default
 
 # Run Claude usage
+# Priority order:
+# 1) ANTHROPIC_OAUTH_API_KEY
+# 2) ~/.claude/.credentials.json (claudeAiOauth.accessToken)
 nix run .#default -- claude
 
 # Run with API key
