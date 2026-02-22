@@ -15,15 +15,24 @@ nix develop -c cargo fmt -- --check
 nix develop -c cargo check
 ```
 
-Run checks
+## Package usage (recommended)
 
 ```bash
-# Validate missing API key behavior (exit 2)
-nix develop -c cargo run --quiet -- claude
+# Build package
+nix build .#default
+
+# Run package
+nix run .#default -- claude
 
 # Run with API key
 ANTHROPIC_OAUTH_API_KEY=your_token_here \
-  nix develop -c cargo run --quiet -- claude
+  nix run .#default -- claude
+```
+
+## Release-style verification
+
+```bash
+./scripts/verify-package.sh
 ```
 
 If `ANTHROPIC_BASE_URL` is not set, the command uses `https://api.anthropic.com`.
