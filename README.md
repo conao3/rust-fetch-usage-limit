@@ -1,6 +1,6 @@
 # rust-fetch-usage-limit
 
-A CLI tool that fetches Claude OAuth usage limits and prints JSON output.
+A CLI tool that fetches Claude and Codex usage limits and prints JSON output.
 
 ## Requirements
 
@@ -21,12 +21,15 @@ nix develop -c cargo check
 # Build package
 nix build .#default
 
-# Run package
+# Run Claude usage
 nix run .#default -- claude
 
 # Run with API key
 ANTHROPIC_OAUTH_API_KEY=your_token_here \
   nix run .#default -- claude
+
+# Run Codex usage (requires openclaw CLI)
+nix run .#default -- codex
 ```
 
 ## Release-style verification

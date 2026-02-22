@@ -19,4 +19,8 @@ if [ "$STATUS" -ne 2 ]; then
   exit 1
 fi
 
-echo "[3/3] package verification passed"
+echo "[3/4] check codex subcommand is exposed"
+HELP_OUTPUT=$(nix run .#default -- --help 2>&1)
+echo "$HELP_OUTPUT" | grep -q "codex"
+
+echo "[4/4] package verification passed"
