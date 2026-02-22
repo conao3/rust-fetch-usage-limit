@@ -22,6 +22,7 @@
       perSystem =
         {
           system,
+          self',
           ...
         }:
         let
@@ -43,6 +44,18 @@
         in
         {
           formatter = treefmtEval.config.build.wrapper;
+
+          packages.default = pkgs.rustPlatform.buildRustPackage {
+            pname = "fetch-usage-limit";
+            version = "0.1.0";
+            src = ./.;
+            cargoLock.lockFile = ./Cargo.lock;
+          };
+
+          apps.default = {
+            type = "app";
+            program = "${pkgs.lib.getExe' self'.packages.default "fetch-usage-limit"}";
+          };
 
           devShells.default = pkgs.mkShell {
             packages = with pkgs; [
