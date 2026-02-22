@@ -78,12 +78,9 @@ fn read_claude_oauth_token() -> Result<String, String> {
         }
     }
 
-    let credentials_path = env::var("CLAUDE_CREDENTIALS_FILE")
-        .map(PathBuf::from)
-        .unwrap_or_else(|_| {
-            PathBuf::from(env::var("HOME").unwrap_or_else(|_| "/tmp".to_string()))
-                .join(".claude/.credentials.json")
-        });
+    let credentials_path =
+        PathBuf::from(env::var("HOME").unwrap_or_else(|_| "/tmp".to_string()))
+            .join(".claude/.credentials.json");
 
     let content = fs::read_to_string(&credentials_path)
         .map_err(|e| format!("failed to read {}: {e}", credentials_path.display()))?;
@@ -231,10 +228,8 @@ fn read_codex_auth() -> Result<(String, String), String> {
         }
     }
 
-    let auth_path = env::var("CODEX_AUTH_FILE").map(PathBuf::from).unwrap_or_else(|_| {
-        PathBuf::from(env::var("HOME").unwrap_or_else(|_| "/tmp".to_string()))
-            .join(".codex/auth.json")
-    });
+    let auth_path = PathBuf::from(env::var("HOME").unwrap_or_else(|_| "/tmp".to_string()))
+        .join(".codex/auth.json");
 
     let content = fs::read_to_string(&auth_path)
         .map_err(|e| format!("failed to read auth file {}: {e}", auth_path.display()))?;
