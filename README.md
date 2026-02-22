@@ -28,7 +28,7 @@ nix run .#default -- claude
 ANTHROPIC_OAUTH_API_KEY=your_token_here \
   nix run .#default -- claude
 
-# Run Codex usage (requires openclaw CLI)
+# Run Codex usage (requires ~/.codex/auth.json from codex login)
 nix run .#default -- codex
 ```
 
