@@ -77,6 +77,116 @@ On failure
 - `error`
 - `response_body` for non-success HTTP responses
 
+### Example output (redacted)
+
+```json
+{
+  "ok": true,
+  "summary": {
+    "five_hour": {
+      "percent_left": 96.0,
+      "resets_at": "<redacted-timestamp>"
+    },
+    "seven_day": {
+      "percent_left": 100.0,
+      "resets_at": "<redacted-timestamp>"
+    },
+    "seven_day_sonnet": {
+      "percent_left": 100.0,
+      "resets_at": "<redacted-timestamp>"
+    }
+  },
+  "usage": {
+    "extra_usage": {
+      "is_enabled": false,
+      "monthly_limit": null,
+      "used_credits": null,
+      "utilization": null
+    },
+    "five_hour": {
+      "resets_at": "<redacted-timestamp>",
+      "utilization": 4.0
+    },
+    "iguana_necktie": null,
+    "seven_day": {
+      "resets_at": "<redacted-timestamp>",
+      "utilization": 0.0
+    },
+    "seven_day_cowork": null,
+    "seven_day_oauth_apps": null,
+    "seven_day_opus": null,
+    "seven_day_sonnet": {
+      "resets_at": "<redacted-timestamp>",
+      "utilization": 0.0
+    }
+  }
+}
+```
+
+### Example output for `codex` (redacted)
+
+```json
+{
+  "ok": true,
+  "summary": {
+    "five_hour": {
+      "limit_window_seconds": 18000,
+      "reset_after_seconds": 4266,
+      "reset_at": "<redacted-unix-timestamp>",
+      "used_percent": 96
+    },
+    "seven_day": {
+      "limit_window_seconds": 604800,
+      "reset_after_seconds": 517980,
+      "reset_at": "<redacted-unix-timestamp>",
+      "used_percent": 84
+    }
+  },
+  "usage": {
+    "account_id": "<redacted-account-id>",
+    "additional_rate_limits": null,
+    "code_review_rate_limit": {
+      "allowed": true,
+      "limit_reached": false,
+      "primary_window": {
+        "limit_window_seconds": 604800,
+        "reset_after_seconds": 604800,
+        "reset_at": "<redacted-unix-timestamp>",
+        "used_percent": 0
+      },
+      "secondary_window": null
+    },
+    "credits": {
+      "approx_cloud_messages": [0, 0],
+      "approx_local_messages": [0, 0],
+      "balance": "0",
+      "has_credits": false,
+      "unlimited": false
+    },
+    "email": "<redacted-email>",
+    "plan_type": "plus",
+    "promo": null,
+    "rate_limit": {
+      "allowed": true,
+      "limit_reached": false,
+      "primary_window": {
+        "limit_window_seconds": 18000,
+        "reset_after_seconds": 4266,
+        "reset_at": "<redacted-unix-timestamp>",
+        "used_percent": 96
+      },
+      "secondary_window": {
+        "limit_window_seconds": 604800,
+        "reset_after_seconds": 517980,
+        "reset_at": "<redacted-unix-timestamp>",
+        "used_percent": 84
+      }
+    },
+    "user_id": "<redacted-user-id>"
+  }
+}
+```
+
 Summary fields
 
 For `claude`
