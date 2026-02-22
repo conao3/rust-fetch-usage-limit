@@ -1,36 +1,36 @@
 # rust-fetch-usage-limit
 
-Claude の OAuth usage limit を取得して JSON 出力する CLI です。
+A CLI tool that fetches Claude OAuth usage limits and prints JSON output.
 
-## 前提
+## Requirements
 
-- Nix が使えること
-- `ANTHROPIC_OAUTH_API_KEY` が設定されていること
-- 必要に応じて `ANTHROPIC_BASE_URL` を設定できること
+- Nix available in your environment
+- `ANTHROPIC_OAUTH_API_KEY` set
+- Optional `ANTHROPIC_BASE_URL` override when needed
 
-## devShell での動作確認
+## Verify in devShell
 
 ```bash
 nix develop -c cargo fmt -- --check
 nix develop -c cargo check
 ```
 
-実行確認
+Run checks
 
 ```bash
-# APIキー未設定時の確認（exit 2）
+# Validate missing API key behavior (exit 2)
 nix develop -c cargo run --quiet -- claude
 
-# APIキー設定時
+# Run with API key
 ANTHROPIC_OAUTH_API_KEY=your_token_here \
   nix develop -c cargo run --quiet -- claude
 ```
 
-`ANTHROPIC_BASE_URL` は未設定時に `https://api.anthropic.com` を使います。
+If `ANTHROPIC_BASE_URL` is not set, the command uses `https://api.anthropic.com`.
 
-## 出力
+## Output
 
-成功時は次の形式で出力します。
+Successful output contains:
 
 - `ok`
 - `usage`
@@ -38,10 +38,10 @@ ANTHROPIC_OAUTH_API_KEY=your_token_here \
 - `summary.seven_day`
 - `summary.seven_day_sonnet`
 
-失敗時は `ok: false` と `error` を返します。
+Failure output contains `ok: false` and `error`.
 
-終了コード
+Exit codes
 
-- 0 成功
-- 1 通信エラーやHTTPエラー、JSON解析エラー
-- 2 `ANTHROPIC_OAUTH_API_KEY` 未設定
+- 0 success
+- 1 request, HTTP, or JSON parsing error
+- 2 `ANTHROPIC_OAUTH_API_KEY` is missing

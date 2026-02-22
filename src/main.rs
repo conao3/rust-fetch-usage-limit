@@ -15,7 +15,7 @@ struct Cli {
 
 #[derive(Subcommand, Debug)]
 enum Commands {
-    /// Claude OAuth usage limit を取得して JSON 出力
+    /// Fetch Claude OAuth usage limits and print JSON output
     Claude,
 }
 
