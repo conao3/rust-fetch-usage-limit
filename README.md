@@ -200,6 +200,41 @@ For `codex`
 - `five_hour` from `rate_limit.primary_window`
 - `seven_day` from `rate_limit.secondary_window`
 
+## OpenTelemetry
+
+Set `OTEL_EXPORTER_OTLP_ENDPOINT` to enable OTLP trace export. When unset, tracing is disabled with zero overhead.
+
+| Variable | Description |
+|---|---|
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | OTLP endpoint (required to enable tracing) |
+| `OTEL_EXPORTER_OTLP_PROTOCOL` | `http/protobuf` for HTTP or `grpc` for gRPC (default: `grpc`) |
+| `OTEL_EXPORTER_OTLP_HEADERS` | Auth headers (e.g. `Authorization=Basic ...`) |
+
+Trace structure per command:
+
+- `run_claude` / `run_codex` (root span)
+  - `resolve_auth` (child span)
+  - `http_request` (child span) with `http.request.method`, `url.full`, `http.response.status_code` attributes and `http.response.body` event containing the raw API response
+  - `output` event containing the final JSON output
+
+### Grafana Cloud
+
+```bash
+OTEL_EXPORTER_OTLP_ENDPOINT=https://otlp-gateway-prod-<region>.grafana.net/otlp \
+OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf \
+OTEL_EXPORTER_OTLP_HEADERS="Authorization=Basic <base64(instanceID:apiToken)>" \
+  nix run .#default -- claude
+```
+
+### Jaeger (local)
+
+```bash
+docker run -d -p 16686:16686 -p 4317:4317 jaegertracing/all-in-one:latest
+
+OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317 \
+  nix run .#default -- claude
+```
+
 ## Exit codes
 
 - `0`: success

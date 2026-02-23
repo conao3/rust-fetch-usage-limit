@@ -1,4 +1,8 @@
 use clap::{Parser, Subcommand};
+use opentelemetry::trace::{Span, TraceContextExt, Tracer, get_active_span};
+use opentelemetry::{Context, KeyValue, global};
+use opentelemetry_sdk::Resource;
+use opentelemetry_sdk::trace::SdkTracerProvider;
 use reqwest::header::{ACCEPT, AUTHORIZATION, CONTENT_TYPE, USER_AGENT};
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value, json};
@@ -59,6 +63,35 @@ struct ClaudeAiOauth {
     access_token: Option<String>,
 }
 
+fn init_tracer_provider() -> Option<SdkTracerProvider> {
+    if env::var("OTEL_EXPORTER_OTLP_ENDPOINT").is_err() {
+        return None;
+    }
+    Some(
+        SdkTracerProvider::builder()
+            .with_resource(
+                Resource::builder()
+                    .with_service_name("fetch-usage-limit")
+                    .build(),
+            )
+            .with_batch_exporter(match env::var("OTEL_EXPORTER_OTLP_PROTOCOL").as_deref() {
+                Ok("http/protobuf") | Ok("http/json") => std::thread::spawn(|| {
+                    opentelemetry_otlp::SpanExporter::builder()
+                        .with_http()
+                        .build()
+                })
+                .join()
+                .ok()?
+                .ok()?,
+                _ => opentelemetry_otlp::SpanExporter::builder()
+                    .with_tonic()
+                    .build()
+                    .ok()?,
+            })
+            .build(),
+    )
+}
+
 fn left(v: Option<f64>) -> Option<f64> {
     v.map(|n| (100.0 - n).max(0.0))
 }
@@ -99,14 +132,21 @@ fn read_claude_oauth_token() -> Result<String, String> {
 }
 
 async fn run_claude() -> ExitCode {
+    let tracer = global::tracer("fetch-usage-limit");
+    let _root_guard = Context::current_with_span(tracer.start("run_claude")).attach();
+
     let base_url =
         env::var("ANTHROPIC_BASE_URL").unwrap_or_else(|_| "https://api.anthropic.com".to_string());
 
-    let api_key = match read_claude_oauth_token() {
-        Ok(v) => v,
-        Err(e) => {
-            print_json(&json!({"ok": false, "error": e}));
-            return ExitCode::from(2);
+    let api_key = {
+        let _auth_guard =
+            Context::current_with_span(tracer.start("resolve_auth")).attach();
+        match read_claude_oauth_token() {
+            Ok(v) => v,
+            Err(e) => {
+                print_json(&json!({"ok": false, "error": e}));
+                return ExitCode::from(2);
+            }
         }
     };
 
@@ -122,6 +162,10 @@ async fn run_claude() -> ExitCode {
             return ExitCode::from(1);
         }
     };
+
+    let mut http_span = tracer.start("http_request");
+    http_span.set_attribute(KeyValue::new("http.request.method", "GET"));
+    http_span.set_attribute(KeyValue::new("url.full", url.clone()));
 
     let response = match client
         .get(url)
@@ -141,6 +185,10 @@ async fn run_claude() -> ExitCode {
     };
 
     let status = response.status();
+    http_span.set_attribute(KeyValue::new(
+        "http.response.status_code",
+        status.as_u16() as i64,
+    ));
     let body_text = match response.text().await {
         Ok(t) => t,
         Err(e) => {
@@ -150,6 +198,11 @@ async fn run_claude() -> ExitCode {
             return ExitCode::from(1);
         }
     };
+    http_span.add_event(
+        "http.response.body",
+        vec![KeyValue::new("body", body_text.clone())],
+    );
+    drop(http_span);
 
     if !status.is_success() {
         print_json(&json!({
@@ -198,12 +251,22 @@ async fn run_claude() -> ExitCode {
         }),
     );
 
-    print_json(&json!({
+    let out = json!({
         "ok": true,
         "usage": usage_value,
         "summary": summary,
-    }));
+    });
+    get_active_span(|span| {
+        span.add_event(
+            "output",
+            vec![KeyValue::new(
+                "json",
+                serde_json::to_string(&out).unwrap_or_default(),
+            )],
+        );
+    });
 
+    print_json(&out);
     ExitCode::SUCCESS
 }
 
@@ -252,11 +315,18 @@ fn read_codex_auth() -> Result<(String, String), String> {
 }
 
 async fn run_codex() -> ExitCode {
-    let (access_token, account_id) = match read_codex_auth() {
-        Ok(v) => v,
-        Err(e) => {
-            print_json(&json!({"ok": false, "error": e}));
-            return ExitCode::from(2);
+    let tracer = global::tracer("fetch-usage-limit");
+    let _root_guard = Context::current_with_span(tracer.start("run_codex")).attach();
+
+    let (access_token, account_id) = {
+        let _auth_guard =
+            Context::current_with_span(tracer.start("resolve_auth")).attach();
+        match read_codex_auth() {
+            Ok(v) => v,
+            Err(e) => {
+                print_json(&json!({"ok": false, "error": e}));
+                return ExitCode::from(2);
+            }
         }
     };
 
@@ -273,6 +343,10 @@ async fn run_codex() -> ExitCode {
             return ExitCode::from(1);
         }
     };
+
+    let mut http_span = tracer.start("http_request");
+    http_span.set_attribute(KeyValue::new("http.request.method", "GET"));
+    http_span.set_attribute(KeyValue::new("url.full", url.clone()));
 
     let response = match client
         .get(url)
@@ -292,6 +366,10 @@ async fn run_codex() -> ExitCode {
     };
 
     let status = response.status();
+    http_span.set_attribute(KeyValue::new(
+        "http.response.status_code",
+        status.as_u16() as i64,
+    ));
     let body_text = match response.text().await {
         Ok(t) => t,
         Err(e) => {
@@ -299,6 +377,11 @@ async fn run_codex() -> ExitCode {
             return ExitCode::from(1);
         }
     };
+    http_span.add_event(
+        "http.response.body",
+        vec![KeyValue::new("body", body_text.clone())],
+    );
+    drop(http_span);
 
     if !status.is_success() {
         print_json(&json!({
@@ -336,6 +419,15 @@ async fn run_codex() -> ExitCode {
             "seven_day": secondary
         }
     });
+    get_active_span(|span| {
+        span.add_event(
+            "output",
+            vec![KeyValue::new(
+                "json",
+                serde_json::to_string(&out).unwrap_or_default(),
+            )],
+        );
+    });
 
     print_json(&out);
     ExitCode::SUCCESS
@@ -343,9 +435,16 @@ async fn run_codex() -> ExitCode {
 
 #[tokio::main]
 async fn main() -> ExitCode {
-    let cli = Cli::parse();
-    match cli.command {
+    let provider = init_tracer_provider();
+    if let Some(ref p) = provider {
+        global::set_tracer_provider(p.clone());
+    }
+    let exit_code = match Cli::parse().command {
         Commands::Claude => run_claude().await,
         Commands::Codex => run_codex().await,
+    };
+    if let Some(p) = provider {
+        let _ = p.shutdown();
     }
+    exit_code
 }
