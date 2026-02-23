@@ -1,4 +1,4 @@
-# rust-fetch-usage-limit
+# llm-quota
 
 A CLI tool that fetches usage-limit information for Claude and Codex and prints JSON output.
 

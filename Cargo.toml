@@ -1,5 +1,5 @@
 [package]
-name = "fetch-usage-limit"
+name = "llm-quota"
 version = "0.1.0"
 edition = "2024"
 

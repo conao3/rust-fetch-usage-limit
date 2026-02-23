@@ -1,5 +1,5 @@
 {
-  description = "rust-fetch-usage-limit development environment";
+  description = "llm-quota development environment";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -46,7 +46,7 @@
           formatter = treefmtEval.config.build.wrapper;
 
           packages.default = pkgs.rustPlatform.buildRustPackage {
-            pname = "fetch-usage-limit";
+            pname = "llm-quota";
             version = "0.1.0";
             src = ./.;
             cargoLock.lockFile = ./Cargo.lock;
@@ -54,7 +54,7 @@
 
           apps.default = {
             type = "app";
-            program = "${pkgs.lib.getExe' self'.packages.default "fetch-usage-limit"}";
+            program = "${pkgs.lib.getExe' self'.packages.default "llm-quota"}";
           };
 
           devShells.default = pkgs.mkShell {

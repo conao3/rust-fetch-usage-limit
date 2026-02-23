@@ -12,7 +12,7 @@ use std::path::PathBuf;
 use std::process::ExitCode;
 
 #[derive(Parser, Debug)]
-#[command(name = "fetch-usage-limit")]
+#[command(name = "llm-quota")]
 #[command(about = "Usage limit utilities", long_about = None)]
 struct Cli {
     #[command(subcommand)]
@@ -71,7 +71,7 @@ fn init_tracer_provider() -> Option<SdkTracerProvider> {
         SdkTracerProvider::builder()
             .with_resource(
                 Resource::builder()
-                    .with_service_name("fetch-usage-limit")
+                    .with_service_name("llm-quota")
                     .build(),
             )
             .with_batch_exporter(match env::var("OTEL_EXPORTER_OTLP_PROTOCOL").as_deref() {
@@ -132,7 +132,7 @@ fn read_claude_oauth_token() -> Result<String, String> {
 }
 
 async fn run_claude() -> ExitCode {
-    let tracer = global::tracer("fetch-usage-limit");
+    let tracer = global::tracer("llm-quota");
     let _root_guard = Context::current_with_span(tracer.start("run_claude")).attach();
 
     let base_url =
@@ -315,7 +315,7 @@ fn read_codex_auth() -> Result<(String, String), String> {
 }
 
 async fn run_codex() -> ExitCode {
-    let tracer = global::tracer("fetch-usage-limit");
+    let tracer = global::tracer("llm-quota");
     let _root_guard = Context::current_with_span(tracer.start("run_codex")).attach();
 
     let (access_token, account_id) = {
