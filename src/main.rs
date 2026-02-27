@@ -22,8 +22,26 @@ struct Cli {
 #[derive(Subcommand, Debug)]
 enum Commands {
     /// Fetch Claude OAuth usage limits and print JSON output
+    #[command(after_help = "\
+Environment Variables:
+  ANTHROPIC_OAUTH_API_KEY  OAuth access token (overrides ~/.claude/.credentials.json)
+  ANTHROPIC_BASE_URL       API base URL [default: https://api.anthropic.com]
+
+  OTEL_EXPORTER_OTLP_ENDPOINT  OTLP endpoint (enables tracing when set)
+  OTEL_EXPORTER_OTLP_PROTOCOL  http/protobuf or grpc [default: grpc]
+  OTEL_EXPORTER_OTLP_HEADERS   Auth headers (e.g. Authorization=Basic ...)")]
     Claude,
     /// Fetch Codex usage limits and print JSON output
+    #[command(after_help = "\
+Environment Variables:
+  OPENAI_OAUTH_API_KEY   OAuth access token (overrides ~/.codex/auth.json)
+  OPENAI_ACCOUNT_ID      Account ID (required with OPENAI_OAUTH_API_KEY)
+  CHATGPT_ACCOUNT_ID     Account ID alternative to OPENAI_ACCOUNT_ID
+  CHATGPT_BASE_URL       API base URL [default: https://chatgpt.com]
+
+  OTEL_EXPORTER_OTLP_ENDPOINT  OTLP endpoint (enables tracing when set)
+  OTEL_EXPORTER_OTLP_PROTOCOL  http/protobuf or grpc [default: grpc]
+  OTEL_EXPORTER_OTLP_HEADERS   Auth headers (e.g. Authorization=Basic ...)")]
     Codex,
 }
 
