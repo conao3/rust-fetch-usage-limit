@@ -87,11 +87,7 @@ fn init_tracer_provider() -> Option<SdkTracerProvider> {
     }
     Some(
         SdkTracerProvider::builder()
-            .with_resource(
-                Resource::builder()
-                    .with_service_name("llm-quota")
-                    .build(),
-            )
+            .with_resource(Resource::builder().with_service_name("llm-quota").build())
             .with_batch_exporter(match env::var("OTEL_EXPORTER_OTLP_PROTOCOL").as_deref() {
                 Ok("http/protobuf") | Ok("http/json") => std::thread::spawn(|| {
                     opentelemetry_otlp::SpanExporter::builder()
@@ -129,9 +125,8 @@ fn read_claude_oauth_token() -> Result<String, String> {
         }
     }
 
-    let credentials_path =
-        PathBuf::from(env::var("HOME").unwrap_or_else(|_| "/tmp".to_string()))
-            .join(".claude/.credentials.json");
+    let credentials_path = PathBuf::from(env::var("HOME").unwrap_or_else(|_| "/tmp".to_string()))
+        .join(".claude/.credentials.json");
 
     let content = fs::read_to_string(&credentials_path)
         .map_err(|e| format!("failed to read {}: {e}", credentials_path.display()))?;
@@ -157,8 +152,7 @@ async fn run_claude() -> ExitCode {
         env::var("ANTHROPIC_BASE_URL").unwrap_or_else(|_| "https://api.anthropic.com".to_string());
 
     let api_key = {
-        let _auth_guard =
-            Context::current_with_span(tracer.start("resolve_auth")).attach();
+        let _auth_guard = Context::current_with_span(tracer.start("resolve_auth")).attach();
         match read_claude_oauth_token() {
             Ok(v) => v,
             Err(e) => {
@@ -337,8 +331,7 @@ async fn run_codex() -> ExitCode {
     let _root_guard = Context::current_with_span(tracer.start("run_codex")).attach();
 
     let (access_token, account_id) = {
-        let _auth_guard =
-            Context::current_with_span(tracer.start("resolve_auth")).attach();
+        let _auth_guard = Context::current_with_span(tracer.start("resolve_auth")).attach();
         match read_codex_auth() {
             Ok(v) => v,
             Err(e) => {
@@ -348,7 +341,8 @@ async fn run_codex() -> ExitCode {
         }
     };
 
-    let base_url = env::var("CHATGPT_BASE_URL").unwrap_or_else(|_| "https://chatgpt.com".to_string());
+    let base_url =
+        env::var("CHATGPT_BASE_URL").unwrap_or_else(|_| "https://chatgpt.com".to_string());
     let url = format!("{}/backend-api/wham/usage", base_url.trim_end_matches('/'));
 
     let client = match reqwest::Client::builder()
@@ -391,7 +385,9 @@ async fn run_codex() -> ExitCode {
     let body_text = match response.text().await {
         Ok(t) => t,
         Err(e) => {
-            print_json(&json!({"ok": false, "error": format!("failed to read response body: {e}")}));
+            print_json(
+                &json!({"ok": false, "error": format!("failed to read response body: {e}")}),
+            );
             return ExitCode::from(1);
         }
     };
