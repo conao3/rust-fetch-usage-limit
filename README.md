@@ -31,7 +31,8 @@ nix run .#default -- codex
 ### Claude
 
 1. `ANTHROPIC_OAUTH_API_KEY`
-2. `~/.claude/.credentials.json` field `claudeAiOauth.accessToken`
+2. `$CLAUDE_CONFIG_DIR/.credentials.json` field `claudeAiOauth.accessToken`
+3. `~/.claude/.credentials.json` field `claudeAiOauth.accessToken`
 
 Optional settings
 

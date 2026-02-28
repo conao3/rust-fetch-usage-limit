@@ -25,6 +25,7 @@ enum Commands {
     #[command(after_help = "\
 Environment Variables:
   ANTHROPIC_OAUTH_API_KEY  OAuth access token (overrides ~/.claude/.credentials.json)
+  CLAUDE_CONFIG_DIR        Claude config directory (uses $CLAUDE_CONFIG_DIR/.credentials.json)
   ANTHROPIC_BASE_URL       API base URL [default: https://api.anthropic.com]
 
   OTEL_EXPORTER_OTLP_ENDPOINT  OTLP endpoint (enables tracing when set)
@@ -35,6 +36,7 @@ Environment Variables:
     #[command(after_help = "\
 Environment Variables:
   OPENAI_OAUTH_API_KEY   OAuth access token (overrides ~/.codex/auth.json)
+  CODEX_HOME             Codex config directory (uses $CODEX_HOME/auth.json)
   OPENAI_ACCOUNT_ID      Account ID (required with OPENAI_OAUTH_API_KEY)
   CHATGPT_ACCOUNT_ID     Account ID alternative to OPENAI_ACCOUNT_ID
   CHATGPT_BASE_URL       API base URL [default: https://chatgpt.com]
@@ -125,8 +127,26 @@ fn read_claude_oauth_token() -> Result<String, String> {
         }
     }
 
-    let credentials_path = PathBuf::from(env::var("HOME").unwrap_or_else(|_| "/tmp".to_string()))
-        .join(".claude/.credentials.json");
+    let mut candidates = Vec::new();
+    if let Ok(config_dir) = env::var("CLAUDE_CONFIG_DIR") {
+        let dir = config_dir.trim();
+        if !dir.is_empty() {
+            let base = PathBuf::from(dir);
+            candidates.push(base.join(".credentials.json"));
+        }
+    }
+    candidates.push(
+        PathBuf::from(env::var("HOME").unwrap_or_else(|_| "/tmp".to_string()))
+            .join(".claude/.credentials.json"),
+    );
+
+    let credentials_path = candidates
+        .into_iter()
+        .find(|path| path.is_file())
+        .ok_or_else(|| {
+            "ANTHROPIC_OAUTH_API_KEY is not set and Claude credentials file was not found (checked CLAUDE_CONFIG_DIR and ~/.claude/.credentials.json)"
+                .to_string()
+        })?;
 
     let content = fs::read_to_string(&credentials_path)
         .map_err(|e| format!("failed to read {}: {e}", credentials_path.display()))?;
@@ -139,8 +159,10 @@ fn read_claude_oauth_token() -> Result<String, String> {
         .map(|s| s.trim().to_string())
         .filter(|s| !s.is_empty())
         .ok_or_else(|| {
-            "ANTHROPIC_OAUTH_API_KEY is not set and accessToken was not found in ~/.claude/.credentials.json"
-                .to_string()
+            format!(
+                "ANTHROPIC_OAUTH_API_KEY is not set and accessToken was not found in {}",
+                credentials_path.display()
+            )
         })
 }
 
@@ -303,8 +325,18 @@ fn read_codex_auth() -> Result<(String, String), String> {
         }
     }
 
-    let auth_path = PathBuf::from(env::var("HOME").unwrap_or_else(|_| "/tmp".to_string()))
-        .join(".codex/auth.json");
+    let auth_path = if let Ok(codex_home) = env::var("CODEX_HOME") {
+        let codex_home = codex_home.trim();
+        if codex_home.is_empty() {
+            PathBuf::from(env::var("HOME").unwrap_or_else(|_| "/tmp".to_string()))
+                .join(".codex/auth.json")
+        } else {
+            PathBuf::from(codex_home).join("auth.json")
+        }
+    } else {
+        PathBuf::from(env::var("HOME").unwrap_or_else(|_| "/tmp".to_string()))
+            .join(".codex/auth.json")
+    };
 
     let content = fs::read_to_string(&auth_path)
         .map_err(|e| format!("failed to read auth file {}: {e}", auth_path.display()))?;
